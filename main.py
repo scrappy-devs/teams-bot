@@ -1,16 +1,48 @@
 import os
 import random
 import discord
+import boto3
+import logging
+import json
 from discord.ext import commands
 from dotenv import load_dotenv
 from discord.utils import get
+from secret_wrapper import GetSecretWrapper
 
-# Get token from .env file
-load_dotenv()
-token = os.getenv('TOKEN')
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def get_token(secret_name):
+    """
+    Retrieve a secret from AWS Secrets Manager.
+
+    :param secret_name: Name of the secret to retrieve.
+    :type secret_name: str
+    """
+    try:
+        # Validate secret_name
+        if not secret_name:
+            raise ValueError("Secret name must be provided.")
+        # Retrieve the secret by name
+        client = boto3.client("secretsmanager")
+        wrapper = GetSecretWrapper(client)
+        secret = wrapper.get_secret(secret_name)
+        secret_dict = json.loads(secret)
+        return secret_dict['discord_bot_token']
+    except Exception as e:
+        logging.error(f"Error retrieving secret: {e}")
+        raise
+
+# FOR LOCAL DEVELOPMENT:
+# # Get token from .env file
+# load_dotenv()
+# token = os.getenv('TOKEN')
 
 intents = discord.Intents().all()
 client = discord.Client(intents=intents)
+token = get_token("app/discord_bot")
+
 
 @client.event
 async def on_ready():
@@ -125,5 +157,26 @@ async def on_voice_state_update(member, before, after):
         if len(before.channel.members) == 0:
             print(f"Deleting empty channel: {before.channel.name}")
             await before.channel.delete()
+
+def run_scenario(secret_name):
+    """
+    Retrieve a secret from AWS Secrets Manager.
+
+    :param secret_name: Name of the secret to retrieve.
+    :type secret_name: str
+    """
+    try:
+        # Validate secret_name
+        if not secret_name:
+            raise ValueError("Secret name must be provided.")
+        # Retrieve the secret by name
+        client = boto3.client("secretsmanager")
+        wrapper = GetSecretWrapper(client)
+        secret = wrapper.get_secret(secret_name)
+        # Note: Secrets should not be logged.
+        return secret
+    except Exception as e:
+        logging.error(f"Error retrieving secret: {e}")
+        raise
 
 client.run(token)

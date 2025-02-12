@@ -1,3 +1,4 @@
 discord
 audioop-lts
 python-dotenv
+boto3

@@ -13,51 +13,56 @@ from secret_wrapper import GetSecretWrapper
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def get_token(secret_name):
-    """
-    Retrieve a secret from AWS Secrets Manager.
+# def get_token(secret_name):
+#     """
+#     Retrieve a secret from AWS Secrets Manager.
 
-    :param secret_name: Name of the secret to retrieve.
-    :type secret_name: str
-    """
-    try:
-        # Validate secret_name
-        if not secret_name:
-            raise ValueError("Secret name must be provided.")
-        # Retrieve the secret by name
-        client = boto3.client("secretsmanager")
-        wrapper = GetSecretWrapper(client)
-        secret = wrapper.get_secret(secret_name)
-        secret_dict = json.loads(secret)
-        return secret_dict['discord_bot_token']
-    except Exception as e:
-        logging.error(f"Error retrieving secret: {e}")
-        raise
+#     :param secret_name: Name of the secret to retrieve.
+#     :type secret_name: str
+#     """
+#     try:
+#         # Validate secret_name
+#         if not secret_name:
+#             raise ValueError("Secret name must be provided.")
+#         # Retrieve the secret by name
+#         client = boto3.client("secretsmanager")
+#         wrapper = GetSecretWrapper(client)
+#         secret = wrapper.get_secret(secret_name)
+#         secret_dict = json.loads(secret)
+#         return secret_dict['discord_bot_token']
+#     except Exception as e:
+#         logging.error(f"Error retrieving secret: {e}")
+#         raise
 
 # FOR LOCAL DEVELOPMENT:
-# # Get token from .env file
-# load_dotenv()
-# token = os.getenv('TOKEN')
+# Get token from .env file
+load_dotenv()
+token = os.getenv('TOKEN')
 
 intents = discord.Intents().all()
 client = discord.Client(intents=intents)
-token = get_token("app/discord_bot")
+# token = get_token("app/discord_bot")
 
 
 @client.event
 async def on_ready():
     print(f'We have logged in as {client.user}')
 
+async def handle_team_command(message, command):
+    parts = message.content.split()
+    if len(parts) < 2:
+        await message.channel.send(f"Usage: `{command} <source_channel_name>`")
+        return
+    return parts[1]
+
 @client.event
 async def on_message(message):
     if message.author == client.user:
         return
 
+    # Command to split teams and move members to new channels
     if message.content.startswith('!customs'):
-        parts = message.content.split()
-        if len(parts) < 2:
-            await message.channel.send("Usage: `!customs <source_channel_name>`")
-            return
+        await handle_team_command(message, '!customs')
 
         # Parse channel name (not ID)
         source_channel_name = parts[1]
@@ -108,46 +113,42 @@ async def on_message(message):
 
     # Command to split teams and print members (without creating channels)
     if message.content.startswith('!teams'):
-        parts = message.content.split()
-        if len(parts) < 2:
-            await message.channel.send("Usage: `!teams <source_channel_name>`")
+        source_channel_name = await handle_team_command(message, '!teams')
+        if not source_channel_name:
+            return
+    
+    try:
+        # Find the source voice channel by name
+        source_channel = get(message.guild.voice_channels, name=source_channel_name)
+        if not source_channel:
+            await message.channel.send(f"Could not find a voice channel named '{source_channel_name}'.")
             return
 
-        # Parse channel name (not ID)
-        source_channel_name = parts[1]
+        # Get members in the source channel
+        members = source_channel.members
+        if not members:
+            await message.channel.send(f"No members found in {source_channel.name}.")
+            return
 
-        try:
-            # Find the source voice channel by name
-            source_channel = get(message.guild.voice_channels, name=source_channel_name)
-            if not source_channel:
-                await message.channel.send(f"Could not find a voice channel named '{source_channel_name}'.")
-                return
+        # Shuffle and split members
+        random.shuffle(members)
+        mid = len(members) // 2
+        team1 = members[:mid]
+        team2 = members[mid:]
 
-            # Get members in the source channel
-            members = source_channel.members
-            if not members:
-                await message.channel.send(f"No members found in {source_channel.name}.")
-                return
+        # Print teams in the message
+        team1_names = ', '.join([m.display_name for m in team1])
+        team2_names = ', '.join([m.display_name for m in team2])
 
-            # Shuffle and split members
-            random.shuffle(members)
-            mid = len(members) // 2
-            team1 = members[:mid]
-            team2 = members[mid:]
+        await message.channel.send(
+            f"Teams split successfully:\n"
+            f"**Team 1**: {team1_names}\n"
+            f"**Team 2**: {team2_names}"
+        )
 
-            # Print teams in the message
-            team1_names = ', '.join([m.display_name for m in team1])
-            team2_names = ', '.join([m.display_name for m in team2])
-
-            await message.channel.send(
-                f"Teams split successfully:\n"
-                f"**Team 1**: {team1_names}\n"
-                f"**Team 2**: {team2_names}"
-            )
-
-        except Exception as e:
-            print(f"Error: {e}")
-            await message.channel.send("An error occurred while processing your request.")
+    except Exception as e:
+        print(f"Error: {e}")
+        await message.channel.send("An error occurred while processing your request.")
 
 @client.event
 async def on_voice_state_update(member, before, after):
@@ -157,26 +158,5 @@ async def on_voice_state_update(member, before, after):
         if len(before.channel.members) == 0:
             print(f"Deleting empty channel: {before.channel.name}")
             await before.channel.delete()
-
-def run_scenario(secret_name):
-    """
-    Retrieve a secret from AWS Secrets Manager.
-
-    :param secret_name: Name of the secret to retrieve.
-    :type secret_name: str
-    """
-    try:
-        # Validate secret_name
-        if not secret_name:
-            raise ValueError("Secret name must be provided.")
-        # Retrieve the secret by name
-        client = boto3.client("secretsmanager")
-        wrapper = GetSecretWrapper(client)
-        secret = wrapper.get_secret(secret_name)
-        # Note: Secrets should not be logged.
-        return secret
-    except Exception as e:
-        logging.error(f"Error retrieving secret: {e}")
-        raise
 
 client.run(token)

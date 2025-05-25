@@ -13,35 +13,40 @@ from secret_wrapper import GetSecretWrapper
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# def get_token(secret_name):
-#     """
-#     Retrieve a secret from AWS Secrets Manager.
+def get_token(secret_name):
+    """
+    Retrieve a secret from AWS Secrets Manager.
 
-#     :param secret_name: Name of the secret to retrieve.
-#     :type secret_name: str
-#     """
-#     try:
-#         # Validate secret_name
-#         if not secret_name:
-#             raise ValueError("Secret name must be provided.")
-#         # Retrieve the secret by name
-#         client = boto3.client("secretsmanager")
-#         wrapper = GetSecretWrapper(client)
-#         secret = wrapper.get_secret(secret_name)
-#         secret_dict = json.loads(secret)
-#         return secret_dict['discord_bot_token']
-#     except Exception as e:
-#         logging.error(f"Error retrieving secret: {e}")
-#         raise
+    :param secret_name: Name of the secret to retrieve.
+    :type secret_name: str
+    """
+    try:
+        # Validate secret_name
+        if not secret_name:
+            raise ValueError("Secret name must be provided.")
+        # Retrieve the secret by name
+        client = boto3.client("secretsmanager")
+        wrapper = GetSecretWrapper(client)
+        secret = wrapper.get_secret(secret_name)
+        secret_dict = json.loads(secret)
+        return secret_dict['discord_bot_token']
+    except Exception as e:
+        logging.error(f"Error retrieving secret: {e}")
+        raise
 
 # FOR LOCAL DEVELOPMENT:
 # Get token from .env file
 load_dotenv()
-token = os.getenv('TOKEN')
 
 intents = discord.Intents().all()
 client = discord.Client(intents=intents)
-# token = get_token("app/discord_bot")
+env = os.getenv('APP_ENV', 'local')
+token = ""
+
+if env == 'aws':
+    token = get_token("app/discord_bot")
+else:
+    token = os.getenv('TOKEN')
 
 
 @client.event
@@ -55,14 +60,14 @@ async def handle_team_command(message, command):
         return
     return parts[1]
 
+ # Command to split teams and move members to new channels
 @client.event
 async def on_message(message):
     if message.author == client.user:
         return
 
-    # Command to split teams and move members to new channels
-    if message.content.startswith('!customs'):
-        await handle_team_command(message, '!customs')
+    if message.content.startswith('!create_teams'):
+        await handle_team_command(message, '!create_teams')
 
         # Parse channel name (not ID)
         source_channel_name = parts[1]
@@ -106,14 +111,14 @@ async def on_message(message):
             print(f"Error: {e}")
             await message.channel.send("An error occurred while processing your request.")
 
+ # Command to split teams and print members (without creating channels)
 @client.event
 async def on_message(message):
     if message.author == client.user:
         return
 
-    # Command to split teams and print members (without creating channels)
-    if message.content.startswith('!teams'):
-        source_channel_name = await handle_team_command(message, '!teams')
+    if message.content.startswith('!random_teams'):
+        source_channel_name = await handle_team_command(message, '!random_teams')
         if not source_channel_name:
             return
     

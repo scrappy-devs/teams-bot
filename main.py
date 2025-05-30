@@ -25,7 +25,7 @@ def get_token(secret_name):
         if not secret_name:
             raise ValueError("Secret name must be provided.")
         # Retrieve the secret by name
-        client = boto3.client("secretsmanager")
+        client = boto3.client("secretsmanager", region_name="us-west-1")
         wrapper = GetSecretWrapper(client)
         secret = wrapper.get_secret(secret_name)
         secret_dict = json.loads(secret)
@@ -44,6 +44,7 @@ env = os.getenv('APP_ENV', 'local')
 token = ""
 
 if env == 'aws':
+    logger.info("Running in AWS environment, retrieving token from Secrets Manager.")
     token = get_token("app/discord_bot")
 else:
     token = os.getenv('TOKEN')

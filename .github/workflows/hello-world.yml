@@ -16,5 +16,5 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Print Hello World
-        run: echo "Hello, World!"
+      - name: Testtestesttest
+        run: echo "test test test test"

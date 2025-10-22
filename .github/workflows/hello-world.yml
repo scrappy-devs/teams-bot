@@ -3,7 +3,11 @@ name: Hello World Workflow
 on:
   push:
     branches:
-      - workflow-test
+      - main
+    
+  pull_request:
+    branches:
+      - main
 
 jobs:
   say-hello:

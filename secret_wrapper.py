@@ -21,7 +21,7 @@ class GetSecretWrapper:
             get_secret_value_response = self.client.get_secret_value(
                 SecretId=secret_name
             )
-            logging.info("Secret retrieved successfully.")
+            logging.info("Lolololol.")
             return get_secret_value_response["SecretString"]
         except self.client.exceptions.ResourceNotFoundException:
             msg = f"The requested secret {secret_name} was not found."

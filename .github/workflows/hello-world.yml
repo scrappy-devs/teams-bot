@@ -17,4 +17,9 @@ jobs:
 
     steps:
       - name: Print Hello World
-        run: echo "Hello, World!"
+        run: |
+          if [ "${{ github.ref_name }}" = "test-branch" ]; then
+            echo "Hello, other branch!";
+          else
+            echo "Hello, World!";
+          fi

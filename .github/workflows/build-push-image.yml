@@ -33,5 +33,3 @@ jobs:
           file: ./Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: docker.io/dolphinemulator/teams-bot:latest
-          build-args: |
-            TOKEN=${{ secrets.TOKEN }}

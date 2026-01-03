@@ -1,10 +1,10 @@
-FROM python:3.14-rc-slim-bullseye
+FROM python:3.15-rc-slim
 
 WORKDIR /app
 COPY . /app
 
-ARG TOKEN
-ENV TOKEN=$TOKEN
+# ARG TOKEN
+# ENV TOKEN=$TOKEN
 
 # Install build tools and libraries required for aiohttp
 RUN apt-get update && apt-get install -y --no-install-recommends \

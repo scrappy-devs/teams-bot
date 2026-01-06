@@ -8,6 +8,8 @@ from discord.ext import commands
 from dotenv import load_dotenv
 from discord.utils import get
 from secret_wrapper import GetSecretWrapper
+from queue_view import QueueView
+from queue_state import format_queue
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -65,6 +67,12 @@ async def handle_team_command(message, command):
 async def on_message(message):
     if message.author == client.user:
         return
+
+    if message.content.startswith("!queue"):
+        await message.channel.send(
+            content=format_queue(),
+            view=QueueView()
+        )
 
     # Command to split teams and print members (without creating channels)
     if message.content.startswith('!random_teams'):

@@ -63,12 +63,31 @@ async def handle_team_command(message, command):
         return
     return parts[1]
 
+async def get_queue_size(message, command):
+    parts = message.content.split()
+    if len(parts) < 2:
+        await message.channel.send(f"Usage: `{command} <queue_size>`")
+        return
+    try:
+        # Attempt to convert the string input to an integer
+        queue_size = int(parts[1])
+        if queue_size <= 0:
+            raise ValueError
+    except ValueError:
+        # Catch the error if the conversion fails and prompt the user again
+        await message.channel.send(f"queue size needs to be greater than 1")
+        return
+    return queue_size
+
 @client.event
 async def on_message(message):
     if message.author == client.user:
         return
 
     if message.content.startswith("!queue"):
+        queue_size = await get_queue_size(message, '!queue')
+        if not queue_size:
+            return
         await message.channel.send(
             content=format_queue(),
             view=QueueView()

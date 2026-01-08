@@ -44,6 +44,7 @@ intents = discord.Intents().all()
 client = discord.Client(intents=intents)
 env = os.getenv('APP_ENV', 'local')
 token = ""
+valid_games = {"mpt", "cod", "rainbow", "rocket"}
 
 if env == 'aws':
     logger.info("Running in AWS environment, retrieving token from Secrets Manager.")
@@ -65,19 +66,23 @@ async def handle_team_command(message, command):
 
 async def get_queue_size(message, command):
     parts = message.content.split()
-    if len(parts) < 2:
-        await message.channel.send(f"Usage: `{command} <queue_size>`")
+    if len(parts) < 3:
+        await message.channel.send(f"Usage: `{command} <game> <queue_size>`")
+        return
+    game = parts[1]
+    if game.lower() not in valid_games:
+        await message.channel.send(f"`{game}` is not a valid game. Please choose from the following games: `{valid_games}`")
         return
     try:
         # Attempt to convert the string input to an integer
-        queue_size = int(parts[1])
+        queue_size = int(parts[2])
         if queue_size <= 0:
             raise ValueError
     except ValueError:
         # Catch the error if the conversion fails and prompt the user again
         await message.channel.send(f"queue size needs to be greater than 1")
         return
-    return queue_size
+    return game, queue_size
 
 @client.event
 async def on_message(message):
@@ -85,8 +90,8 @@ async def on_message(message):
         return
 
     if message.content.startswith("!queue"):
-        queue_size = await get_queue_size(message, '!queue')
-        if not queue_size:
+        game, queue_size = await get_queue_size(message, '!queue')
+        if not game and not queue_size:
             return
         await message.channel.send(
             content=format_queue(),

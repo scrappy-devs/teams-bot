@@ -71,7 +71,7 @@ async def get_queue_size(message, command):
         return
     game = parts[1]
     if game.lower() not in valid_games:
-        await message.channel.send(f"`{game}` is not a valid game. Please choose from the following games: `{valid_games}`")
+        await message.channel.send(f"`{game}` is not a valid game. Please choose from the following games:\n`{valid_games}`")
         return
     try:
         # Attempt to convert the string input to an integer
@@ -94,8 +94,8 @@ async def on_message(message):
         if not game and not queue_size:
             return
         await message.channel.send(
-            content=format_queue(),
-            view=QueueView()
+            content=format_queue(game, queue_size),
+            view=QueueView(game, queue_size)
         )
 
     # Command to split teams and print members (without creating channels)

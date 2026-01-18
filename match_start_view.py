@@ -4,7 +4,7 @@ from queue_state import format_queue, start_game
 
 class MatchStartView(discord.ui.View):
     def __init__(self, team1, team2, game, creator_id):
-        super().__init__(timeout=None)
+        super().__init__(timeout=18000)  # 5 hours timeout
         self.team1 = team1
         self.team2 = team2
         self.game = game

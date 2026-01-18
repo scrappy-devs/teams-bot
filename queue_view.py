@@ -20,6 +20,12 @@ class QueueView(discord.ui.View):
             )
             return
         
+        if len(self.team1) >= self.queue_size // 2:
+            await interaction.response.send_message(
+                "Team 1 is already full", ephemeral=True
+            )
+            return
+        
         if user in self.team2:
             self.team2.remove(user)
 
@@ -36,6 +42,12 @@ class QueueView(discord.ui.View):
         if user in self.team2:
             await interaction.response.send_message(
                 "You are already in Team 2.", ephemeral=True
+            )
+            return
+        
+        if len(self.team2) >= self.queue_size // 2:
+            await interaction.response.send_message(
+                "Team 2 is already full", ephemeral=True
             )
             return
         

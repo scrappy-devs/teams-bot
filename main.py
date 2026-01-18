@@ -1,13 +1,11 @@
 import os
 import random
 import discord
-import boto3
 import logging
 import json
 from discord.ext import commands
 from dotenv import load_dotenv
 from discord.utils import get
-from secret_wrapper import GetSecretWrapper
 from queue_view import QueueView
 from queue_state import format_queue
 
@@ -15,43 +13,17 @@ from queue_state import format_queue
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def get_token(secret_name):
-    """
-    Retrieve a secret from AWS Secrets Manager.
-
-    :param secret_name: Name of the secret to retrieve.
-    :type secret_name: str
-    """
-    try:
-        # Validate secret_name
-        if not secret_name:
-            raise ValueError("Secret name must be provided.")
-        # Retrieve the secret by name
-        client = boto3.client("secretsmanager", region_name="us-west-1")
-        wrapper = GetSecretWrapper(client)
-        secret = wrapper.get_secret(secret_name)
-        secret_dict = json.loads(secret)
-        return secret_dict['discord_bot_token']
-    except Exception as e:
-        logging.error(f"Error retrieving secret: {e}")
-        raise
-
 # FOR LOCAL DEVELOPMENT:
 # Get token from .env file
 load_dotenv()
 
 intents = discord.Intents().all()
 client = discord.Client(intents=intents)
-env = os.getenv('APP_ENV', 'local')
+
 token = ""
 valid_games = {"mpt", "cod", "rainbow", "rocket"}
 
-if env == 'aws':
-    logger.info("Running in AWS environment, retrieving token from Secrets Manager.")
-    token = get_token("app/discord_bot")
-else:
-    token = os.getenv('TOKEN')
-
+token = os.getenv('TOKEN')
 
 @client.event
 async def on_ready():

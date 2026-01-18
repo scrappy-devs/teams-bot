@@ -33,7 +33,7 @@ class QueueView(discord.ui.View):
 
         self.team1.append(user)
         await interaction.response.edit_message(
-            content=format_queue(self.team1, self.team2, self.game, self.queue_size),
+            content=format_queue(self.team1, self.team2, self.queue_size, self.game),
             view=self
         )
 
@@ -58,7 +58,7 @@ class QueueView(discord.ui.View):
 
         self.team2.append(user)
         await interaction.response.edit_message(
-            content=format_queue(self.team1, self.team2, self.game, self.queue_size),
+            content=format_queue(self.team1, self.team2, self.queue_size, self.game),
             view=self
         )
 
@@ -77,7 +77,7 @@ class QueueView(discord.ui.View):
             return
 
         await interaction.response.edit_message(
-            content=format_queue(self.team1, self.team2, self.game, self.queue_size),
+            content=format_queue(self.team1, self.team2, self.queue_size, self.game),
             view=self
         )
 

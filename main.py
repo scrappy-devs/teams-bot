@@ -8,6 +8,8 @@ from discord.ext import commands
 from dotenv import load_dotenv
 from discord.utils import get
 from secret_wrapper import GetSecretWrapper
+from queue_view import QueueView
+from queue_state import format_queue
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -42,6 +44,7 @@ intents = discord.Intents().all()
 client = discord.Client(intents=intents)
 env = os.getenv('APP_ENV', 'local')
 token = ""
+valid_games = {"mpt", "cod", "rainbow", "rocket"}
 
 if env == 'aws':
     logger.info("Running in AWS environment, retrieving token from Secrets Manager.")
@@ -61,10 +64,68 @@ async def handle_team_command(message, command):
         return
     return parts[1]
 
+async def get_queue_size(message, command):
+    parts = message.content.split()
+    if len(parts) < 3:
+        await message.channel.send(f"Usage: `{command} <game> <queue_size>`")
+        return
+    game = parts[1]
+    if game.lower() not in valid_games:
+        await message.channel.send(f"`{game}` is not a valid game. Please choose from the following games: `{valid_games}`")
+        return
+    try:
+        # Attempt to convert the string input to an integer
+        queue_size = int(parts[2])
+        if queue_size < 2:
+            raise ValueError
+    except ValueError:
+        # Catch the error if the conversion fails and prompt the user again
+        await message.channel.send(f"queue size needs to be greater than 1")
+        return
+    if queue_size % 2 != 0:
+        await message.channel.send(f"queue size needs to be an even number")
+        return
+    return game, queue_size
+
+async def send_help(message):
+    help_message = """
+**Available Commands:**
+
+**!queue <game> <queue_size>**
+Creates a queue for players to join teams. 
+Example: `!queue mpt 8`
+Valid games: `mpt`, `cod`, `rainbow`, `rocket`
+
+**!random_teams <channel_name>**
+Randomly splits members from a voice channel into two teams and displays them.
+Example: `!random_teams Lobby`
+
+**!create_teams <channel_name>**
+Randomly splits members from a voice channel into two teams and moves them to separate voice channels.
+Example: `!create_teams Lobby`
+
+**!help**
+Shows this message.
+    """
+    await message.channel.send(help_message)
+
 @client.event
 async def on_message(message):
     if message.author == client.user:
         return
+
+    if message.content.startswith("!help"):
+        await send_help(message)
+        return
+
+    if message.content.startswith("!queue"):
+        game, queue_size = await get_queue_size(message, '!queue')
+        if not game and not queue_size:
+            return
+        await message.channel.send(
+            content=format_queue([], [], queue_size, game),
+            view=QueueView(queue_size=queue_size, game=game)
+        )
 
     # Command to split teams and print members (without creating channels)
     if message.content.startswith('!random_teams'):

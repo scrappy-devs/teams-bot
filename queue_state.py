@@ -12,3 +12,13 @@ def format_queue(team1, team2, queue_size=0, game=""):
     ) if team2 else "**Team 2:**"
     
     return f"**Current Queue for** `{game.upper()}` **({len(team1) + len(team2)}/{queue_size}):**\n\n{team1_str}\n\n{team2_str}"
+
+def start_game(team1, team2, game):
+    team1_mentions = ', '.join(user.mention for user in team1)
+    team2_mentions = ', '.join(user.mention for user in team2)
+    
+    return (
+        f"**Starting {game.upper()}!**\n\n"
+        f"**Team 1:** {team1_mentions}\n"
+        f"**Team 2:** {team2_mentions}\n\n"
+    )

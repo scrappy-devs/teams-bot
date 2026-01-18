@@ -5,7 +5,7 @@ from match_start_view import MatchStartView
 
 class QueueView(discord.ui.View):
     def __init__(self, queue_size, game, creator_id):
-        super().__init__(timeout=180) # 3 minute timeout
+        super().__init__(timeout=57600) # 16 hours timeout
         self.team1 = []
         self.team2 = []
         self.queue_size = queue_size

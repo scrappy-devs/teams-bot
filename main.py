@@ -84,9 +84,35 @@ async def get_queue_size(message, command):
         return
     return game, queue_size
 
+async def send_help(message):
+    help_message = """
+**Available Commands:**
+
+**!queue <game> <queue_size>**
+Creates a queue for players to join teams. 
+Example: `!queue mpt 8`
+Valid games: `mpt`, `cod`, `rainbow`, `rocket`
+
+**!random_teams <channel_name>**
+Randomly splits members from a voice channel into two teams and displays them.
+Example: `!random_teams Lobby`
+
+**!create_teams <channel_name>**
+Randomly splits members from a voice channel into two teams and moves them to separate voice channels.
+Example: `!create_teams Lobby`
+
+**!help**
+Shows this message.
+    """
+    await message.channel.send(help_message)
+
 @client.event
 async def on_message(message):
     if message.author == client.user:
+        return
+
+    if message.content.startswith("!help"):
+        await send_help(message)
         return
 
     if message.content.startswith("!queue"):
@@ -94,8 +120,8 @@ async def on_message(message):
         if not game and not queue_size:
             return
         await message.channel.send(
-            content=format_queue(None),
-            view=QueueView()
+            content=format_queue([], [], queue_size, game),
+            view=QueueView(queue_size=queue_size, game=game)
         )
 
     # Command to split teams and print members (without creating channels)

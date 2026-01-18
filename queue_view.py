@@ -1,24 +1,25 @@
 import discord
 from discord.ext import commands
-from queue_state import queue, format_queue
+from queue_state import format_queue
 
 class QueueView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
+        self.queue = []
 
     @discord.ui.button(label="Join Queue", style=discord.ButtonStyle.green)
     async def join(self, interaction: discord.Interaction, button: discord.ui.Button):
         user = interaction.user
 
-        if user in queue:
+        if user in self.queue:
             await interaction.response.send_message(
                 "You are already in the queue.", ephemeral=True
             )
             return
 
-        queue.append(user)
+        self.queue.append(user)
         await interaction.response.edit_message(
-            content=format_queue(),
+            content=format_queue(self.queue),
             view=self
         )
 
@@ -26,14 +27,14 @@ class QueueView(discord.ui.View):
     async def leave(self, interaction: discord.Interaction, button: discord.ui.Button):
         user = interaction.user
 
-        if user not in queue:
+        if user not in self.queue:
             await interaction.response.send_message(
                 "You are not in the queue.", ephemeral=True
             )
             return
 
-        queue.remove(user)
+        self.queue.remove(user)
         await interaction.response.edit_message(
-            content=format_queue(),
+            content=format_queue(self.queue),
             view=self
         )

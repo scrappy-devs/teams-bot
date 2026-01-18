@@ -76,7 +76,7 @@ async def get_queue_size(message, command):
     try:
         # Attempt to convert the string input to an integer
         queue_size = int(parts[2])
-        if queue_size <= 0:
+        if queue_size <= 0: #TODO: change this to 1
             raise ValueError
     except ValueError:
         # Catch the error if the conversion fails and prompt the user again
@@ -94,7 +94,7 @@ async def on_message(message):
         if not game and not queue_size:
             return
         await message.channel.send(
-            content=format_queue(),
+            content=format_queue(None),
             view=QueueView()
         )
 

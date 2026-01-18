@@ -124,7 +124,7 @@ async def on_message(message):
             return
         await message.channel.send(
             content=format_queue([], [], queue_size, game),
-            view=QueueView(queue_size=queue_size, game=game)
+            view=QueueView(queue_size=queue_size, game=game, creator_id=message.author.id)
         )
 
     # Command to split teams and print members (without creating channels)

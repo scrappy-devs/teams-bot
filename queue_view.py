@@ -1,14 +1,16 @@
 import discord
 from discord.ext import commands
-from queue_state import format_queue
+from queue_state import format_queue, start_game
+from match_start_view import MatchStartView
 
 class QueueView(discord.ui.View):
-    def __init__(self, queue_size, game):
-        super().__init__(timeout=None)
+    def __init__(self, queue_size, game, creator_id):
+        super().__init__(timeout=180) # 3 minute timeout
         self.team1 = []
         self.team2 = []
         self.queue_size = queue_size
         self.game = game
+        self.creator_id = creator_id
 
     @discord.ui.button(label="Team 1", style=discord.ButtonStyle.green)
     async def join1(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -60,7 +62,7 @@ class QueueView(discord.ui.View):
             view=self
         )
 
-    @discord.ui.button(label="Leave", style=discord.ButtonStyle.red)
+    @discord.ui.button(label="Leave", style=discord.ButtonStyle.gray)
     async def leave(self, interaction: discord.Interaction, button: discord.ui.Button):
         user = interaction.user
 
@@ -78,3 +80,35 @@ class QueueView(discord.ui.View):
             content=format_queue(self.team1, self.team2, self.queue_size),
             view=self
         )
+
+    @discord.ui.button(label="Start Match", style=discord.ButtonStyle.gray)
+    async def start_match(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.creator_id:
+            await interaction.response.send_message(
+                "Only the queue creator can start the match.", ephemeral=True
+            )
+            return     
+        # if len(self.team1) + len(self.team2) < self.queue_size:
+        #     await interaction.response.send_message(
+        #         "Not enough players to start the match.", ephemeral=True
+        #     )
+        #     return
+
+        await interaction.response.edit_message(
+            content=start_game(self.team1, self.team2, self.game),
+            view=MatchStartView(self.team1, self.team2, self.game, self.creator_id)
+        )
+
+        self.stop()  # Stop QueueView since match has started
+        
+    @discord.ui.button(label="CANCEL", style=discord.ButtonStyle.red)
+    async def cancel_match(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.creator_id:
+            await interaction.response.send_message(
+                "Only the queue creator can cancel the match.", ephemeral=True
+            )
+            return
+        
+        await interaction.response.edit_message(content="Match cancelled", view=None)
+        self.stop()
+

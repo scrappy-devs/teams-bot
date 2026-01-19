@@ -7,7 +7,8 @@ from discord.ext import commands
 from dotenv import load_dotenv
 from discord.utils import get
 from queue_view import QueueView
-from queue_state import format_queue
+from queue_state import format_queue, format_perma_queue
+from perma_queue_view import PermaQueueView
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -36,7 +37,7 @@ async def handle_team_command(message, command):
         return
     return parts[1]
 
-async def get_queue_size(message, command):
+async def queue_setup(message, command):
     parts = message.content.split()
     if len(parts) < 3:
         await message.channel.send(f"Usage: `{command} <game> <queue_size>`")
@@ -89,9 +90,28 @@ async def on_message(message):
     if message.content.startswith("!help"):
         await send_help(message)
         return
+    
+    if message.content.startswith("!queue_setup"):
+        if message.author.id != 135206021852299264:
+            await message.channel.send(
+                "You are not authorized to use this command.", ephemeral=True
+            )
+            return
+        game, queue_size = await queue_setup(message, '!queue_setup')
+        if not game and not queue_size:
+            return
+        queue_channel = get(message.guild.text_channels, name="queue")
+        if not queue_channel:
+            await message.channel.send(f"Could not find a channel named 'queue'.")
+            return
+        await queue_channel.send(
+            content=format_perma_queue([], queue_size, game),
+            view=PermaQueueView(queue_size=queue_size, game=game, creator_id=message.author.id)
+        )
+        return
 
     if message.content.startswith("!queue"):
-        game, queue_size = await get_queue_size(message, '!queue')
+        game, queue_size = await queue_setup(message, '!queue')
         if not game and not queue_size:
             return
         await message.channel.send(
@@ -143,7 +163,6 @@ async def on_message(message):
         source_channel_name = await handle_team_command(message, '!create_teams')
         if not source_channel_name:
             return
-
 
         try:
             # Find the source voice channel by name

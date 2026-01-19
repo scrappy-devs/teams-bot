@@ -13,6 +13,14 @@ def format_queue(team1, team2, queue_size=0, game=""):
     
     return f"**Current Queue for** `{game.upper()}` **({len(team1) + len(team2)}/{queue_size}):**\n\n{team1_str}\n\n{team2_str}"
 
+def format_perma_queue(queue, queue_size=0, game=""):
+    """Format the permanent queue display"""
+    queue_str = "**Queue:**\n" + "\n".join(
+        f"{i+1}. {user.mention}" for i, user in enumerate(queue)
+    )
+    
+    return f"**Queue for** `{game.upper()}` **({len(queue)}/{queue_size}):**\n\n{queue_str}"
+
 def start_game(team1, team2, game):
     team1_mentions = ', '.join(user.mention for user in team1)
     team2_mentions = ', '.join(user.mention for user in team2)

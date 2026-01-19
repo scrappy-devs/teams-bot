@@ -18,7 +18,11 @@ class MatchStartView(discord.ui.View):
                 "Only the queue creator can pick the winner.", ephemeral=True
             )
             return
-        await interaction.response.edit_message(content="Team 1 wins!", view=None)
+        team1_mentions = ', '.join(user.mention for user in self.team1)
+        await interaction.response.edit_message(
+            content=f"**Team 1 wins!**\n\n**Winners:** {team1_mentions}",
+            view=None
+        )
         self.stop()
 
     @discord.ui.button(label="Team 2", style=discord.ButtonStyle.blurple)
@@ -29,7 +33,11 @@ class MatchStartView(discord.ui.View):
                 "Only the queue creator can pick the winner.", ephemeral=True
             )
             return
-        await interaction.response.edit_message(content="Team 2 wins!", view=None)
+        team2_mentions = ', '.join(user.mention for user in self.team2)
+        await interaction.response.edit_message(
+            content=f"**Team 2 wins!**\n\n**Winners:** {team2_mentions}",
+            view=None
+        )
         self.stop()
 
     @discord.ui.button(label="CANCEL ", style=discord.ButtonStyle.red)

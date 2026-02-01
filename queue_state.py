@@ -1,4 +1,10 @@
 # queue_state.py
+dolphin = 135206021852299264
+
+# game_channel_ids = {
+#     "rocket": 1460835372824268945,
+#     "mpt": 1458647024206614731
+# }
 
 def format_queue(team1, team2, queue_size=0, game=""):
     # Format team1 (left side)
@@ -15,11 +21,13 @@ def format_queue(team1, team2, queue_size=0, game=""):
 
 def format_perma_queue(queue, queue_size=0, game=""):
     """Format the permanent queue display"""
-    queue_str = "**Queue:**\n" + "\n".join(
+    queue_str = "\n".join(
         f"{i+1}. {user.mention}" for i, user in enumerate(queue)
     )
     
-    return f"**Queue for** `{game.upper()}` **({len(queue)}/{queue_size}):**\n\n{queue_str}"
+    separator = "─" * 40
+    
+    return f"{separator}\n**Queue for** `{game.upper()}` **({len(queue)}/{queue_size}):**\n\n{queue_str}\n{separator}"
 
 def start_game(team1, team2, game):
     team1_mentions = ', '.join(user.mention for user in team1)

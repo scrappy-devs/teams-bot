@@ -7,7 +7,7 @@ from discord.ext import commands
 from dotenv import load_dotenv
 from discord.utils import get
 from queue_view import QueueView
-from queue_state import format_queue, format_perma_queue
+from queue_state import format_queue, format_perma_queue, dolphin
 from perma_queue_view import PermaQueueView
 
 # Configure logging
@@ -92,7 +92,7 @@ async def on_message(message):
         return
     
     if message.content.startswith("!queue_setup"):
-        if message.author.id != 135206021852299264:
+        if message.author.id != dolphin:
             await message.channel.send(
                 "You are not authorized to use this command.", ephemeral=True
             )
@@ -100,10 +100,30 @@ async def on_message(message):
         game, queue_size = await queue_setup(message, '!queue_setup')
         if not game and not queue_size:
             return
-        queue_channel = get(message.guild.text_channels, name="queue")
+        channel_name = "queue"
+        
+        # Find or create the category with the game name
+        game_category = get(message.guild.categories, name=game)
+        if not game_category:
+            try:
+                game_category = await message.guild.create_category(game)
+            except Exception as e:
+                await message.channel.send(f"Could not create category '{game}': {e}")
+                return
+        
+        # Look for the channel in the game category
+        queue_channel = get(game_category.text_channels, name=channel_name)
+        
+        # Create the channel if it doesn't exist
         if not queue_channel:
-            await message.channel.send(f"Could not find a channel named 'queue'.")
-            return
+            try:
+                queue_channel = await message.guild.create_text_channel(
+                    channel_name,
+                    category=game_category
+                )
+            except Exception as e:
+                await message.channel.send(f"Could not create channel '{channel_name}': {e}")
+                return
         await queue_channel.send(
             content=format_perma_queue([], queue_size, game),
             view=PermaQueueView(queue_size=queue_size, game=game, creator_id=message.author.id)

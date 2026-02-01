@@ -33,6 +33,7 @@ class PermaQueueView(discord.ui.View):
         self.queue.append(user)
         
         # Check if queue is now full
+        # Create pre match if queue is full
         if len(self.queue) >= self.queue_size:
             # Randomize and split into two teams
             shuffled_queue = self.queue.copy()
@@ -41,19 +42,46 @@ class PermaQueueView(discord.ui.View):
             team1 = shuffled_queue[:mid]
             team2 = shuffled_queue[mid:]
             
-            # Send message to general channel with MatchStartView
-            general_channel = get(interaction.guild.text_channels, name="general")
-            if general_channel:
-                await general_channel.send(
-                    content=start_game(team1, team2, self.game),
-                    view=MatchStartView(team1, team2, self.game, self.creator_id)
-                )
-            
-            # Reset the queue
+            # Reset the queue first
             self.queue = []
+            
+            # Update the message first
             await interaction.response.edit_message(
                 content=format_perma_queue(self.queue, self.queue_size, self.game),
                 view=self
+            )
+            
+            # Find or create the category with the game name
+            game_category = get(interaction.guild.categories, name=self.game)
+            if not game_category:
+                try:
+                    game_category = await interaction.guild.create_category(self.game)
+                except Exception as e:
+                    await interaction.followup.send(
+                        f"Could not create category '{self.game}': {e}", ephemeral=True
+                    )
+                    return
+            
+            # Look for the matches channel in the game category
+            matches_channel = get(game_category.text_channels, name="matches")
+            
+            # Create the channel if it doesn't exist
+            if not matches_channel:
+                try:
+                    matches_channel = await interaction.guild.create_text_channel(
+                        "matches",
+                        category=game_category
+                    )
+                except Exception as e:
+                    await interaction.followup.send(
+                        f"Could not create channel 'matches': {e}", ephemeral=True
+                    )
+                    return
+            
+            # Send message to matches channel with MatchStartView
+            await matches_channel.send(
+                content=start_game(team1, team2, self.game),
+                view=MatchStartView(team1, team2, self.game, self.creator_id)
             )
         else:
             await interaction.response.edit_message(

@@ -7,8 +7,9 @@ from discord.ext import commands
 from dotenv import load_dotenv
 from discord.utils import get
 from queue_view import QueueView
-from queue_state import format_queue, format_perma_queue, dolphin
+from queue_state import format_queue, format_perma_queue, dolphin, get_display_name
 from perma_queue_view import PermaQueueView
+from database import init_db, get_user_stats
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -29,6 +30,12 @@ token = os.getenv('TOKEN')
 @client.event
 async def on_ready():
     print(f'We have logged in as {client.user}')
+    # Initialize database
+    try:
+        await init_db()
+        logger.info("Database initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize database: {e}")
 
 async def handle_team_command(message, command):
     parts = message.content.split()
@@ -69,6 +76,10 @@ Creates a queue for players to join teams.
 Example: `!queue mpt 8`
 Valid games: `mpt`, `cod`, `rainbow`, `rocket`
 
+**!stats [game]**
+Shows your win/loss statistics. Use without a game to see all games, or specify a game.
+Example: `!stats` or `!stats mpt`
+
 **!random_teams <channel_name>**
 Randomly splits members from a voice channel into two teams and displays them.
 Example: `!random_teams Lobby`
@@ -89,6 +100,70 @@ async def on_message(message):
 
     if message.content.startswith("!help"):
         await send_help(message)
+        return
+    
+    if message.content.startswith("!stats"):
+        parts = message.content.split()
+        user_id = message.author.id
+        
+        # Check if a specific game was requested
+        if len(parts) > 1:
+            game = parts[1].lower()
+            if game not in valid_games:
+                await message.channel.send(
+                    f"`{game}` is not a valid game. Please choose from: `{valid_games}`"
+                )
+                return
+            
+            # Get stats for specific game
+            stats = await get_user_stats(user_id, game)
+            if stats is None:
+                display_name = get_display_name(game)
+                await message.channel.send(
+                    f"{message.author.mention}, you have no recorded stats for **{display_name}**."
+                )
+            else:
+                win_rate = (stats['wins'] / (stats['wins'] + stats['losses']) * 100) if (stats['wins'] + stats['losses']) > 0 else 0
+                display_name = get_display_name(game)
+                await message.channel.send(
+                    f"**{message.author.display_name}'s {display_name} Stats:**\n"
+                    f"Wins: **{stats['wins']}**\n"
+                    f"Losses: **{stats['losses']}**\n"
+                    f"Win Rate: **{win_rate:.1f}%**"
+                )
+        else:
+            # Get stats for all games
+            stats_list = await get_user_stats(user_id)
+            if not stats_list:
+                await message.channel.send(
+                    f"{message.author.mention}, you have no recorded stats yet."
+                )
+            else:
+                # Format stats for all games
+                stats_lines = []
+                total_wins = 0
+                total_losses = 0
+                
+                for stat in stats_list:
+                    game_code = stat['game']
+                    wins = stat['wins']
+                    losses = stat['losses']
+                    total_wins += wins
+                    total_losses += losses
+                    
+                    win_rate = (wins / (wins + losses) * 100) if (wins + losses) > 0 else 0
+                    display_name = get_display_name(game_code)
+                    stats_lines.append(
+                        f"**{display_name}**: {wins}W - {losses}L ({win_rate:.1f}%)"
+                    )
+                
+                total_win_rate = (total_wins / (total_wins + total_losses) * 100) if (total_wins + total_losses) > 0 else 0
+                
+                stats_message = f"**{message.author.display_name}'s Stats:**\n\n"
+                stats_message += "\n".join(stats_lines)
+                stats_message += f"\n\n**Total**: {total_wins}W - {total_losses}L ({total_win_rate:.1f}%)"
+                
+                await message.channel.send(stats_message)
         return
     
     if message.content.startswith("!queue_setup"):

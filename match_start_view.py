@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 from queue_state import format_queue, start_game, dolphin
+from database import update_match_result
 
 class MatchStartView(discord.ui.View):
     def __init__(self, team1, team2, game, creator_id):
@@ -19,14 +20,28 @@ class MatchStartView(discord.ui.View):
         if winning_team == 1:
             team_mentions = ', '.join(user.mention for user in self.team1)
             content = f"**Team 1 wins!**\n\n**Winners:** {team_mentions}"
+            winning_team_list = self.team1
+            losing_team_list = self.team2
         else:
             team_mentions = ', '.join(user.mention for user in self.team2)
             content = f"**Team 2 wins!**\n\n**Winners:** {team_mentions}"
+            winning_team_list = self.team2
+            losing_team_list = self.team1
         
         await interaction.response.edit_message(
             content=content,
             view=None
         )
+        
+        # Update database with match results
+        # Update wins for winning team
+        for user in winning_team_list:
+            await update_match_result(user.id, self.game, won=True)
+        
+        # Update losses for losing team
+        for user in losing_team_list:
+            await update_match_result(user.id, self.game, won=False)
+        
         self.stop()
 
     @discord.ui.button(label="Team 1", style=discord.ButtonStyle.green)
